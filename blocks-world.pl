@@ -1,75 +1,105 @@
 %
-% time is enumerated from 0 up to some n
-#const n = 1.
-time(0..1).
+% time is measured in discrete steps from 0 to n.
+#const n = 12.
+time(0..n).
 
-block(a;b;c;d;e).
+block(b0;b1;b2;b3;b4;b5;b6;b7).
 
 % located on the table
 location(table).
 % on top of another block
-location(X) :- block(B), location(X).
+location(B) :- block(B).
               
 % fluents
+% Block B is on location L
 fluent(on(B,L)) :- block(B), location(L), B != L.
-fluent(occupied(B)) :- block(B).
+% a block is considered to be occupied if it has another on top of it.
+holds(occupied(B1), T) :- 
+  holds(on(B2,B1), T),
+  block(B1), block(B2),
+  B1 != B2.
+
+-holds(occupied(B), T) :-
+  not holds(occupied(B), T),
+  block(B), time(T).
 
 % actions
+% represents the action of placing a block at or on a particular location
 action(put(B,L)) :- block(B), location(L), B != L.
 
 % the initial state
 % it holds that a is on the table at moment zero
-holds(on(a,table), 0).
-holds(on(e,table), 0).
-holds(on(c,table), 0).
-holds(on(d,c),     0).
-holds(on(b,d),     0).
+holds(on(b0,table), 0).
+holds(on(b3,b0), 0).
+holds(on(b2,b3), 0).
+holds(on(b1,table), 0).
+holds(on(b4,b1), 0).
+holds(on(b5,table), 0).
+holds(on(b6,b5), 0).
+holds(on(b7,b6), 0).
 
 % only the inital state
--holds(F,0) :-
-  not holds(F,0),
-  fluent(F).
-
-  % the table can never be occupied
--holds(occupied(table), T) :- time(T).
-
-holds(occupied(B1), T) :- 
-  holds(on(B2,B1), T),
-  block(B1), block(B2),
-  time(T).
+-holds(on(B,L), 0) :-
+  not holds(on(B,L),0),
+  fluent(on(B,L)).
 
 % inertia axioms
 holds(F, T + 1) :-
-  holds(F,T),
-  not -holds(F,T),
-  fluent(F), time(T).
+  holds(F, T),
+  not -holds(F, T + 1),
+  T < n.
 
 -holds(F, T + 1) :-
-  -holds(F,T),
-  not holds(F,T),
-  fluent(F), time(T).
-
--holds(occupied(B),T) :-
-  not holds(occupied(B),T),
-  block(B), time(T).
+  -holds(F, T),
+  not holds(F,T + 1),
+  T < n.
 
 % effects of actions
 % putting an object on a location causes that object to now be on that location
-holds(on(B,L), T+1) :-
+% **********
+holds(on(B,L), T + 1) :-
   occurs(put(B,L), T),
-  block(B), location(L), time(T).
+  fluent(on(B,L)),
+  action(put(B,L)),
+  T < n.
 
-% an occupied block cannot be placed on any location
-:- occurs(put(B,L), T), holds(occupied(B), T),
-  time(T), action(put(B,L)), fluent(occupied(B)).
+% a block can only be at one locatin at any particular moment of time
+-holds(on(B,L1), T) :-
+  holds(on(B,L2), T),
+  fluent(on(B,L1)),
+  fluent(on(B,L2)),
+  L1 != L2.
 
-% a block cannot be placed on an occupied location
-:- occurs(put(B,L), T), holds(occupied(L), T),
-  time(T), action(put(B,L)), fluent(occupied(L)).
+% it is not possible to put a block onto an occupied location
+:- occurs(put(B,L), T), holds(occupied(L), T).
 
-% scenario 1
-occurs(put(b,table), 1).
+% it is not possible to move an occupied block
+:- occurs(put(B,L), T), holds(occupied(B), T).
+
+% Planning Module
+goal :- 
+  goal(T),
+  time(T).
+
+goal(T) :-
+  holds(on(b0,table), T),
+  holds(on(b1,b0), T),
+  holds(on(b2,b1), T),
+  holds(on(b3,b2), T),
+  holds(on(b4,b3), T),
+  holds(on(b5,b4), T),
+  holds(on(b6,b5), T),
+  holds(on(b7,b6), T),
+  time(T).
+
+1{occurs(A,T) : action(A)}1 :- not goal(T), time(T).
+
+:- not goal.
+
+%occurs(put(b6,table), 0).
 
 % solver directives
-#show holds/2.
-#show -holds/2.
+#show occurs/2.
+%#show -holds/2.
+
+% challenge: write the same program in java in 130 lines or less

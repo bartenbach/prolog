@@ -1,13 +1,10 @@
 % family.pl
-object(john).
-object(jeff).
-object(mary).
-object(yulia).
-object(joseph).
-object(jon_snow).
-
-male(john).
-male(jeff).
+person(john).
+person(jeff).
+person(mary).
+person(yulia).
+person(joseph).
+person(wilhelm).
 
 -male(X) :- female(X).
 
@@ -23,4 +20,4 @@ person(X) :- female(X).
 % closed world or open world assumption
 -person(X) :- not person(X), object(X).
 
-% upcoming homework will be Einstein's riddle.
+#show person/1.
